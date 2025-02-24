@@ -9,7 +9,6 @@ typedef struct leaf {
     char symbol;
 } leaf;
 
-leaf *leaf_create(uint32_t weight, char symbol);
 void sort_leaves(leaf **leaves, uint32_t len);
 void sort_string(char *str, uint32_t len);
 uint32_t string_length(const char *str);
@@ -33,17 +32,6 @@ int main(int argc, char **argv) {
     display_all_leaves(root);
 
     return 0;
-}
-
-leaf *leaf_create(uint32_t weight, char symbol) {
-    leaf *l = malloc(sizeof(*l));
-
-    l->left = NULL;
-    l->right = NULL;
-    l->weight = weight;
-    l->symbol = symbol;
-
-    return l;
 }
 
 void sort_leaves(leaf **leaves, uint32_t len) {
