@@ -16,8 +16,10 @@ uint32_t string_length(const char *str);
 uint32_t get_leaves(leaf ***l, const char *path);
 void print_leaves(leaf **leaves, uint32_t leaves_count);
 leaf *create_tree(leaf **leaves, uint32_t leaves_count);
+void display_all_leaves(leaf *root);
 
 int main(int argc, char **argv) {
+    leaf *root;
     leaf **leaves = NULL;
     uint32_t leaves_count = get_leaves(&leaves, argv[1]);
 
@@ -26,9 +28,9 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    sort_leaves(leaves, leaves_count);
-    print_leaves(leaves, leaves_count);
-    create_tree(leaves, leaves_count);
+    root = create_tree(leaves, leaves_count);
+
+    display_all_leaves(root);
 
     return 0;
 }
@@ -167,4 +169,18 @@ leaf *create_tree(leaf **leaves, uint32_t leaves_count) {
     }
 
     return leaves[0];
+}
+
+void display_all_leaves(leaf *root) {
+    if (root->symbol != 0) {
+        if (root->symbol == '\n') {
+            printf("(\\n)");
+        } else {
+            printf("(%c)", root->symbol);
+        } 
+        return;
+    }
+
+    display_all_leaves(root->left);
+    display_all_leaves(root->right);
 }
