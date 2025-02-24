@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    root = create_tree(leaves, leaves_count);
+    root = create_tree(leaves, leaves_count);    
     encode(argv[1], argv[2], root);
 
     return 0;
@@ -81,7 +81,7 @@ uint32_t string_length(const char *str) {
 }
 
 uint32_t get_leaves(leaf ***l, const char *path) {
-    char chars_count[256] = { 0 };
+    uint32_t chars_count[256] = { 0 };
     uint32_t i, j, leaves_count;
     FILE *file = fopen(path, "r");
     uint64_t file_size;
@@ -181,21 +181,11 @@ void display_all_leaves(leaf *root) {
 
 /* TODO: make compression like 8 times better */
 void encode(const char *input_path, const char *output_path, leaf *root) {
-    int c, i;
+    int c;
     character_code table[256] = { 0 };
 
     character_code accum;
     create_table(root, &table, accum);
-
-    for (i = 0; i < 256; i++) {
-        if (table[i].len > 0) {
-            if ((char)i == '\n') {
-                printf("\\n: %s\n", table[i].code);
-            } else {
-                printf("%c: %s\n", (char)i, table[i].code);
-            }
-        }
-    }
 
     FILE *input_file = fopen(input_path, "r");
     FILE *output_file = fopen(output_path, "a");
