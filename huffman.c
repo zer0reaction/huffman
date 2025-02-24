@@ -183,7 +183,7 @@ void display_all_leaves(leaf *root) {
 /* TODO: make compression like 8 times better */
 void encode(const char *input_path, const char *output_path, leaf *root) {
     int i, c;
-    uint32_t file_size;
+    uint64_t file_size;
     character_code table[256] = { 0 };
 
     character_code accum;
