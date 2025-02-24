@@ -67,6 +67,7 @@ void sort_string(char *str, uint32_t len) {
                 str[j + 1] = c;
             }
         }
+        printf("Sorting progress: %d / %d\n", i, len - 1);
     }
 }
 
@@ -181,7 +182,8 @@ void display_all_leaves(leaf *root) {
 
 /* TODO: make compression like 8 times better */
 void encode(const char *input_path, const char *output_path, leaf *root) {
-    int c;
+    int i, c;
+    uint32_t file_size;
     character_code table[256] = { 0 };
 
     character_code accum;
@@ -190,10 +192,17 @@ void encode(const char *input_path, const char *output_path, leaf *root) {
     FILE *input_file = fopen(input_path, "r");
     FILE *output_file = fopen(output_path, "a");
 
+    fseek(input_file, 0, SEEK_END);
+    file_size = ftell(input_file);
+    fseek(input_file, 0, SEEK_SET);
+
+    i = 0;
     c = fgetc(input_file);
     while (c != EOF) {
         fprintf(output_file, "%s", table[c].code);
         c = fgetc(input_file);
+        i++;
+        printf("Encoding progress: %d / %d\n", i, file_size);
     }
 
     fclose(input_file);
