@@ -9,6 +9,11 @@ typedef struct leaf {
     char symbol;
 } leaf;
 
+typedef struct {
+    char code[256];
+    uint32_t len;
+} character_code;
+
 void sort_leaves(leaf **leaves, uint32_t len);
 void sort_string(char *str, uint32_t len);
 uint32_t string_length(const char *str);
@@ -16,20 +21,21 @@ uint32_t get_leaves(leaf ***l, const char *path);
 void print_leaves(leaf **leaves, uint32_t leaves_count);
 leaf *create_tree(leaf **leaves, uint32_t leaves_count);
 void display_all_leaves(leaf *root);
+void encode(const char *input_path, const char *output_path, leaf *root);
+void create_table(leaf *root, character_code (*table)[], character_code accum);
 
 int main(int argc, char **argv) {
     leaf *root;
     leaf **leaves = NULL;
     uint32_t leaves_count = get_leaves(&leaves, argv[1]);
 
-    if (argc == 1) {
-        printf("No file specified.\n");
+    if (argc != 3) {
+        printf("Invalid use.\n");
         exit(1);
     }
 
     root = create_tree(leaves, leaves_count);
-
-    display_all_leaves(root);
+    encode(argv[1], argv[2], root);
 
     return 0;
 }
@@ -171,4 +177,51 @@ void display_all_leaves(leaf *root) {
 
     display_all_leaves(root->left);
     display_all_leaves(root->right);
+}
+
+/* TODO: make compression like 8 times better */
+void encode(const char *input_path, const char *output_path, leaf *root) {
+    int c, i;
+    character_code table[256] = { 0 };
+
+    character_code accum;
+    create_table(root, &table, accum);
+
+    for (i = 0; i < 256; i++) {
+        if (table[i].len > 0) {
+            if ((char)i == '\n') {
+                printf("\\n: %s\n", table[i].code);
+            } else {
+                printf("%c: %s\n", (char)i, table[i].code);
+            }
+        }
+    }
+
+    FILE *input_file = fopen(input_path, "r");
+    FILE *output_file = fopen(output_path, "a");
+
+    c = fgetc(input_file);
+    while (c != EOF) {
+        fprintf(output_file, "%s", table[c].code);
+        c = fgetc(input_file);
+    }
+
+    fclose(input_file);
+    fclose(output_file);
+}
+
+void create_table(leaf *root, character_code (*table)[], character_code accum) {
+    if (root->symbol != 0) {
+        (*table)[(int)(root->symbol)] = accum;
+        return;
+    }
+
+    character_code accum_left = accum;
+    accum_left.code[(accum_left.len)++] = '0';
+
+    character_code accum_right = accum;
+    accum_right.code[(accum_right.len)++] = '1';
+
+    create_table(root->left, table, accum_left);
+    create_table(root->right, table, accum_right);
 }
