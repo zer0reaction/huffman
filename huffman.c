@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-typedef struct {
+typedef struct leaf {
     struct leaf *left;
     struct leaf *right;
     uint32_t weight;
@@ -15,6 +15,7 @@ void sort_string(char *str, uint32_t len);
 uint32_t string_length(const char *str);
 uint32_t get_leaves(leaf ***l, const char *path);
 void print_leaves(leaf **leaves, uint32_t leaves_count);
+leaf *create_tree(leaf **leaves, uint32_t leaves_count);
 
 int main(int argc, char **argv) {
     leaf **leaves = NULL;
@@ -27,6 +28,7 @@ int main(int argc, char **argv) {
 
     sort_leaves(leaves, leaves_count);
     print_leaves(leaves, leaves_count);
+    create_tree(leaves, leaves_count);
 
     return 0;
 }
@@ -143,4 +145,26 @@ void print_leaves(leaf **leaves, uint32_t leaves_count) {
     for (i = 0; i < leaves_count; i++) {
         printf("%d. weight: %d, symbol: %c\n", i, leaves[i]->weight, leaves[i]->symbol);
     }
+}
+
+leaf *create_tree(leaf **leaves, uint32_t leaves_count) {
+    while (leaves_count > 1) {
+        uint32_t i;
+        leaf *new_leaf;
+        sort_leaves(leaves, leaves_count);
+
+        new_leaf = malloc(sizeof(leaf));
+        new_leaf->left = leaves[0];
+        new_leaf->right = leaves[1];
+        new_leaf->weight = leaves[0]->weight + leaves[1]->weight;
+        new_leaf->symbol = 0;
+
+        leaves[0] = new_leaf;
+        for (i = 1; i < leaves_count - 1; i++) {
+            leaves[i] = leaves[i + 1];
+        }
+        leaves_count--;
+    }
+
+    return leaves[0];
 }
