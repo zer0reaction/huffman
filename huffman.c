@@ -182,7 +182,8 @@ void display_all_leaves(leaf *root) {
 
 /* TODO: make compression like 8 times better */
 void encode(const char *input_path, const char *output_path, leaf *root) {
-    int i, c;
+    int c;
+    uint64_t i;
     uint64_t file_size;
     character_code table[256] = { 0 };
 
@@ -202,7 +203,7 @@ void encode(const char *input_path, const char *output_path, leaf *root) {
         fprintf(output_file, "%s", table[c].code);
         c = fgetc(input_file);
         i++;
-        printf("Encoding progress: %d / %d\n", i, file_size);
+        printf("Encoding progress: %ld / %ld\n", i, file_size);
     }
 
     fclose(input_file);
