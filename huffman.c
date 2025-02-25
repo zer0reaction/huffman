@@ -58,6 +58,7 @@ void sort_leaves(leaf **leaves, uint32_t len) {
     }
 }
 
+/* TODO: quick sort */
 void sort_string(char8_t *str, uint32_t len) {
     uint32_t i, j;
     char8_t c;
