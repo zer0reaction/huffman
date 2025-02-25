@@ -18,7 +18,6 @@ typedef struct {
 
 void sort_leaves(leaf **leaves, uint32_t len);
 void sort_string(char8_t *str, uint32_t len);
-uint32_t string_length(const char8_t *str);
 uint32_t get_leaves(leaf ***l, const char *path);
 void print_leaves(leaf **leaves, uint32_t leaves_count);
 leaf *create_tree(leaf **leaves, uint32_t leaves_count);
@@ -75,20 +74,10 @@ void sort_string(char8_t *str, uint32_t len) {
     }
 }
 
-uint32_t string_length(const char8_t *str) {
-    uint32_t size = 0;
-
-    while (str[size] != '\0') {
-        size++;
-    }
-
-    return size;
-}
-
 uint32_t get_leaves(leaf ***l, const char *path) {
     uint32_t chars_count[256] = { 0 };
     uint32_t i, j, leaves_count;
-    FILE *file = fopen(path, "r");
+    FILE *file = fopen(path, "rb");
     uint64_t file_size;
     char8_t *buffer;
 
@@ -115,7 +104,8 @@ uint32_t get_leaves(leaf ***l, const char *path) {
     }
 
     fread(buffer, file_size, 1, file);
-    sort_string(buffer, string_length(buffer));
+    buffer[file_size] = 0;
+    sort_string(buffer, file_size);
 
     for (i = 0; i < file_size; i++) {
         chars_count[(uint32_t)buffer[i]]++;
@@ -200,7 +190,7 @@ void encode(const char *input_path, const char *output_path, leaf *root) {
     character_code accum;
     create_table(root, &table, accum);
 
-    FILE *input_file = fopen(input_path, "r");
+    FILE *input_file = fopen(input_path, "rb");
     FILE *output_file = fopen(output_path, "a");
 
     if (input_file == NULL || output_file == NULL) {
@@ -226,6 +216,11 @@ void encode(const char *input_path, const char *output_path, leaf *root) {
 }
 
 void create_table(leaf *root, character_code (*table)[], character_code accum) {
+    /* this happens if we are reading binary files */
+    if (root == NULL) {
+        return;
+    }
+
     if (root->symbol != 0) {
         (*table)[(int)(root->symbol)] = accum;
         return;
