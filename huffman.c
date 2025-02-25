@@ -23,6 +23,7 @@ leaf *create_tree(leaf **leaves, uint32_t leaves_count);
 void display_all_leaves(leaf *root);
 void encode(const char *input_path, const char *output_path, leaf *root);
 void create_table(leaf *root, character_code (*table)[], character_code accum);
+void decode(const char *input_path, const char *output_path, leaf *root);
 
 int main(int argc, char **argv) {
     leaf *root;
@@ -36,8 +37,8 @@ int main(int argc, char **argv) {
 
     leaves_count = get_leaves(&leaves, argv[1]);
     root = create_tree(leaves, leaves_count);    
-
     encode(argv[1], argv[2], root);
+    decode(argv[2], "./decoded", root);
 
     return 0;
 }
@@ -127,8 +128,8 @@ void print_leaves(leaf **leaves, uint32_t leaves_count) {
 }
 
 leaf *create_tree(leaf **leaves, uint32_t leaves_count) {
+    uint32_t i;
     while (leaves_count > 1) {
-        uint32_t i;
         leaf *new_leaf;
         sort_leaves(leaves, leaves_count);
 
@@ -193,6 +194,37 @@ void encode(const char *input_path, const char *output_path, leaf *root) {
         printf("Encoding progress: %ld / %ld\r", i, file_size);
     }
     printf("\n");
+
+    fclose(input_file);
+    fclose(output_file);
+}
+
+void decode(const char *input_path, const char *output_path, leaf *root) {
+    int c;
+    FILE *input_file = fopen(input_path, "rb");
+    FILE *output_file = fopen(output_path, "a");
+    leaf *leaf_ptr = root;
+
+    if (input_file == NULL || output_file == NULL) {
+        printf("Can't open files.\n");
+        exit(1);
+    }
+
+    c = 1;
+    while (c != EOF) {
+        if (leaf_ptr->left == NULL && leaf_ptr->right == NULL) {
+            fputc(leaf_ptr->symbol, output_file);
+            leaf_ptr = root;
+            continue;
+        }
+
+        c = fgetc(input_file);
+        if (c == '0') {
+            leaf_ptr = leaf_ptr->left;
+        } else if (c == '1') {
+            leaf_ptr = leaf_ptr->right;
+        }
+    }
 
     fclose(input_file);
     fclose(output_file);
