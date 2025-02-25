@@ -36,8 +36,8 @@ int main(int argc, char **argv) {
     }
 
     leaves_count = get_leaves(&leaves, argv[1]);
-
     root = create_tree(leaves, leaves_count);    
+
     encode(argv[1], argv[2], root);
 
     return 0;
@@ -71,8 +71,9 @@ void sort_string(char8_t *str, uint32_t len) {
                 str[j + 1] = c;
             }
         }
-        printf("Sorting progress: %d / %d\n", i, len - 1);
+        printf("Sorting progress: %d / %d\r", i, len - 1);
     }
+    printf("\n");
 }
 
 uint32_t get_leaves(leaf ***l, const char *path) {
@@ -209,8 +210,9 @@ void encode(const char *input_path, const char *output_path, leaf *root) {
         fprintf(output_file, "%s", table[c].code);
         c = fgetc(input_file);
         i++;
-        printf("Encoding progress: %ld / %ld\n", i, file_size);
+        printf("Encoding progress: %ld / %ld\r", i, file_size);
     }
+    printf("\n");
 
     fclose(input_file);
     fclose(output_file);
