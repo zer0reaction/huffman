@@ -2,21 +2,23 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+typedef unsigned char char8_t;
+
 typedef struct leaf {
     struct leaf *left;
     struct leaf *right;
     uint32_t weight;
-    char symbol;
+    char8_t symbol;
 } leaf;
 
 typedef struct {
-    char code[256];
+    char8_t code[256];
     uint32_t len;
 } character_code;
 
 void sort_leaves(leaf **leaves, uint32_t len);
-void sort_string(char *str, uint32_t len);
-uint32_t string_length(const char *str);
+void sort_string(char8_t *str, uint32_t len);
+uint32_t string_length(const char8_t *str);
 uint32_t get_leaves(leaf ***l, const char *path);
 void print_leaves(leaf **leaves, uint32_t leaves_count);
 leaf *create_tree(leaf **leaves, uint32_t leaves_count);
@@ -27,12 +29,14 @@ void create_table(leaf *root, character_code (*table)[], character_code accum);
 int main(int argc, char **argv) {
     leaf *root;
     leaf **leaves = NULL;
-    uint32_t leaves_count = get_leaves(&leaves, argv[1]);
+    uint32_t leaves_count;
 
     if (argc != 3) {
         printf("Invalid use.\n");
         exit(1);
     }
+
+    leaves_count = get_leaves(&leaves, argv[1]);
 
     root = create_tree(leaves, leaves_count);    
     encode(argv[1], argv[2], root);
@@ -55,9 +59,9 @@ void sort_leaves(leaf **leaves, uint32_t len) {
     }
 }
 
-void sort_string(char *str, uint32_t len) {
+void sort_string(char8_t *str, uint32_t len) {
     uint32_t i, j;
-    char c;
+    char8_t c;
 
     for (i = 1; i < len; i++) {
         for (j = 0; j < len - i; j++) {
@@ -71,7 +75,7 @@ void sort_string(char *str, uint32_t len) {
     }
 }
 
-uint32_t string_length(const char *str) {
+uint32_t string_length(const char8_t *str) {
     uint32_t size = 0;
 
     while (str[size] != '\0') {
@@ -86,6 +90,12 @@ uint32_t get_leaves(leaf ***l, const char *path) {
     uint32_t i, j, leaves_count;
     FILE *file = fopen(path, "r");
     uint64_t file_size;
+    char8_t *buffer;
+
+    if (file == NULL) {
+        printf("Can't open file %s.\n", path);
+        exit(1);
+    }
 
     fseek(file, 0, SEEK_END);
     file_size = ftell(file);
@@ -97,7 +107,7 @@ uint32_t get_leaves(leaf ***l, const char *path) {
         exit(1);
     }
 
-    char *buffer = (char*) malloc(file_size + 1);
+    buffer = (char8_t*) malloc(file_size + 1);
     if (buffer == NULL) {
         fprintf(stderr, "Not enough memory.\n");
         fclose(file);
@@ -192,6 +202,11 @@ void encode(const char *input_path, const char *output_path, leaf *root) {
 
     FILE *input_file = fopen(input_path, "r");
     FILE *output_file = fopen(output_path, "a");
+
+    if (input_file == NULL || output_file == NULL) {
+        printf("Can't open files.\n");
+        exit(1);
+    }
 
     fseek(input_file, 0, SEEK_END);
     file_size = ftell(input_file);
