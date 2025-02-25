@@ -18,9 +18,7 @@ typedef struct {
 
 void sort_leaves(leaf **leaves, uint32_t len);
 uint32_t get_leaves(leaf ***l, const char *path);
-void print_leaves(leaf **leaves, uint32_t leaves_count);
 leaf *create_tree(leaf **leaves, uint32_t leaves_count);
-void display_all_leaves(leaf *root);
 void encode(const char *input_path, const char *output_path, leaf *root);
 void create_table(leaf *root, character_code (*table)[], character_code accum);
 void decode(const char *input_path, const char *output_path, leaf *root);
@@ -119,14 +117,6 @@ uint32_t get_leaves(leaf ***l, const char *path) {
     return leaves_count;
 }
 
-void print_leaves(leaf **leaves, uint32_t leaves_count) {
-    uint32_t i;
-
-    for (i = 0; i < leaves_count; i++) {
-        printf("%d. weight: %d, symbol: %c\n", i, leaves[i]->weight, leaves[i]->symbol);
-    }
-}
-
 leaf *create_tree(leaf **leaves, uint32_t leaves_count) {
     uint32_t i;
     while (leaves_count > 1) {
@@ -147,20 +137,6 @@ leaf *create_tree(leaf **leaves, uint32_t leaves_count) {
     }
 
     return leaves[0];
-}
-
-void display_all_leaves(leaf *root) {
-    if (root != NULL && root->left == NULL && root->right == NULL) {
-        if (root->symbol == '\n') {
-            printf("(\\n)");
-        } else {
-            printf("(%c)", root->symbol);
-        } 
-        return;
-    }
-
-    display_all_leaves(root->left);
-    display_all_leaves(root->right);
 }
 
 /* TODO: make compression like 8 times better */
