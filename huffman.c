@@ -169,7 +169,7 @@ leaf *create_tree(leaf **leaves, uint32_t leaves_count) {
 }
 
 void display_all_leaves(leaf *root) {
-    if (root->symbol != 0) {
+    if (root != NULL && root->left == NULL && root->right == NULL) {
         if (root->symbol == '\n') {
             printf("(\\n)");
         } else {
