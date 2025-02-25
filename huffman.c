@@ -222,7 +222,7 @@ void create_table(leaf *root, character_code (*table)[], character_code accum) {
         return;
     }
 
-    if (root->symbol != 0) {
+    if (root->left == NULL && root->right == NULL) {
         (*table)[(int)(root->symbol)] = accum;
         return;
     }
