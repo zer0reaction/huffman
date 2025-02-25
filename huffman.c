@@ -17,7 +17,6 @@ typedef struct {
 } character_code;
 
 void sort_leaves(leaf **leaves, uint32_t len);
-void sort_string(char8_t *str, uint32_t len);
 uint32_t get_leaves(leaf ***l, const char *path);
 void print_leaves(leaf **leaves, uint32_t leaves_count);
 leaf *create_tree(leaf **leaves, uint32_t leaves_count);
@@ -58,24 +57,6 @@ void sort_leaves(leaf **leaves, uint32_t len) {
     }
 }
 
-/* TODO: quick sort */
-void sort_string(char8_t *str, uint32_t len) {
-    uint32_t i, j;
-    char8_t c;
-
-    for (i = 1; i < len; i++) {
-        for (j = 0; j < len - i; j++) {
-            if (str[j] > str[j + 1]) {
-                c = str[j];
-                str[j] = str[j + 1];
-                str[j + 1] = c;
-            }
-        }
-        printf("Sorting progress: %d / %d\r", i, len - 1);
-    }
-    printf("\n");
-}
-
 uint32_t get_leaves(leaf ***l, const char *path) {
     uint32_t chars_count[256] = { 0 };
     uint32_t i, j, leaves_count;
@@ -107,7 +88,6 @@ uint32_t get_leaves(leaf ***l, const char *path) {
 
     fread(buffer, file_size, 1, file);
     buffer[file_size] = 0;
-    sort_string(buffer, file_size);
 
     for (i = 0; i < file_size; i++) {
         chars_count[(uint32_t)buffer[i]]++;
