@@ -16,12 +16,18 @@ typedef struct {
     uint32_t len;
 } character_code;
 
+typedef struct {
+    char8_t data[1024];
+    uint32_t len;
+} string;
+
 void sort_leaves(leaf **leaves, uint32_t len);
 uint32_t get_leaves(leaf ***l, const char *path);
 leaf *create_tree(leaf **leaves, uint32_t leaves_count);
 void encode(const char *input_path, const char *output_path, leaf *root);
 void create_table(leaf *root, character_code (*table)[], character_code accum);
 void decode(const char *input_path, const char *output_path, leaf *root);
+string compile_tree(leaf *root);
 
 int main(int argc, char **argv) {
     leaf *root;
@@ -34,7 +40,8 @@ int main(int argc, char **argv) {
     }
 
     leaves_count = get_leaves(&leaves, argv[1]);
-    root = create_tree(leaves, leaves_count);    
+    root = create_tree(leaves, leaves_count);
+
     encode(argv[1], argv[2], root);
     decode(argv[2], "./decoded", root);
 
@@ -225,4 +232,37 @@ void create_table(leaf *root, character_code (*table)[], character_code accum) {
 
     create_table(root->left, table, accum_left);
     create_table(root->right, table, accum_right);
+}
+
+string compile_tree(leaf *root) {
+    if (root->left == NULL && root->right == NULL) {
+        string s;
+        s.len = 1;
+        (s.data)[0] = root->symbol;
+        return s;
+    }
+
+    uint32_t i;
+
+    string left = compile_tree(root->left);
+    string right = compile_tree(root->right);
+
+    string s;
+    s.len = left.len + right.len + 2;
+
+    if (s.len >= 1024) {
+        exit(1);
+    }
+
+    (s.data)[0] = '(';
+    (s.data)[s.len - 1] = ')';
+
+    for (i = 0; i < left.len; i++) {
+        (s.data)[1 + i] = (left.data)[i];
+    }
+    for (i = 0; i < right.len; i++) {
+        (s.data)[1 + left.len + i] = (right.data)[i];
+    }
+
+    return s;
 }
