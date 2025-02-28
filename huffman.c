@@ -41,11 +41,11 @@ int main(int argc, char **argv) {
     root = create_tree(leaves, leaves_count);
 
     tree_string = compile_tree(root);
-    printf("%s\n", (char*)(tree_string.data));
+    printf("%s\n\n\n", (char*)(tree_string.data));
 
     decompiled = decompile_tree(tree_string);
     new_tree_string = compile_tree(decompiled);
-    printf("%s\n", (char*)(new_tree_string.data));
+    printf("%s\n\n\n", (char*)(new_tree_string.data));
 
     return 0;
 }
@@ -238,7 +238,7 @@ void create_table(leaf *root, character_code (*table)[], character_code accum) {
 
 string compile_tree(leaf *root) {
     if (root->left == NULL && root->right == NULL) {
-        if (root->symbol == '(' || root->symbol == ')') {
+        if (root->symbol == '(' || root->symbol == ')' || root->symbol == '\\') {
             string s;
             s.len = 4;
             (s.data)[0] = '(';
@@ -264,6 +264,9 @@ string compile_tree(leaf *root) {
     string s;
     s.len = left.len + right.len + 2;
 
+    for (i = 0; i < s.len; i++)
+        (s.data)[i] = 0;
+
     if (s.len >= 1024) {
         exit(1);
     }
@@ -277,6 +280,8 @@ string compile_tree(leaf *root) {
     for (i = 0; i < right.len; i++) {
         (s.data)[1 + left.len + i] = (right.data)[i];
     }
+
+    (s.data)[s.len] = 0;
 
     return s;
 }
