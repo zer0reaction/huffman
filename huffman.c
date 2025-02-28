@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
 
     decompiled = decompile_tree(tree_string);
     new_tree_string = compile_tree(decompiled);
-    printf("%s\n", (char*)(tree_string.data));
+    printf("%s\n", (char*)(new_tree_string.data));
 
     return 0;
 }
@@ -238,10 +238,22 @@ void create_table(leaf *root, character_code (*table)[], character_code accum) {
 
 string compile_tree(leaf *root) {
     if (root->left == NULL && root->right == NULL) {
-        string s;
-        s.len = 1;
-        (s.data)[0] = root->symbol;
-        return s;
+        if (root->symbol == '(' || root->symbol == ')') {
+            string s;
+            s.len = 4;
+            (s.data)[0] = '(';
+            (s.data)[1] = '\\';
+            (s.data)[2] = root->symbol;
+            (s.data)[3] = ')';
+            return s;
+        } else {
+            string s;
+            s.len = 3;
+            (s.data)[0] = '(';
+            (s.data)[1] = root->symbol;
+            (s.data)[2] = ')';
+            return s;
+        }
     }
 
     uint32_t i;
@@ -274,13 +286,22 @@ leaf *decompile_tree(string tree_string) {
     uint32_t i, count;
     string l_str, r_str;
 
-    if (tree_string.len == 1) {
+    if (tree_string.len == 3) {
         leaf *l = malloc(sizeof(leaf));
 
         l->left = NULL;
         l->right = NULL;
         l->weight = 1;
-        l->symbol = (tree_string.data)[0];
+        l->symbol = (tree_string.data)[1];
+
+        return l;
+    } else if (tree_string.len == 4 && (tree_string.data)[1] == '\\') {
+        leaf *l = malloc(sizeof(leaf));
+
+        l->left = NULL;
+        l->right = NULL;
+        l->weight = 1;
+        l->symbol = (tree_string.data)[2];
 
         return l;
     }
@@ -292,36 +313,36 @@ leaf *decompile_tree(string tree_string) {
 
     l_str.len = r_str.len = 0;
     flag = false;
-    count = 0;
 
     for (i = 0; i < tree_string.len;) {
-        if ((tree_string.data)[i] == '(') {
-            count = 0;
+        count = 0;
 
-            do {
-                if      ((tree_string.data)[i] == '(') count++;
-                else if ((tree_string.data)[i] == ')') count--;
+        do {
+            char8_t c = (tree_string.data)[i];
 
+            if (c == '\\') {
                 if (!flag) {
                     (l_str.data)[(l_str.len)++] = (tree_string.data)[i];
                 } else {
                     (r_str.data)[(r_str.len)++] = (tree_string.data)[i];
                 }
-
                 i++;
-            } while (count > 0);
+            } else if (c == '(') {
+                count++;
+            } else if (c == ')') {
+                count--;
+            }
 
-            flag = true;
-        } else {
             if (!flag) {
                 (l_str.data)[(l_str.len)++] = (tree_string.data)[i];
             } else {
                 (r_str.data)[(r_str.len)++] = (tree_string.data)[i];
             }
 
-            flag = true;
             i++;
-        }
+        } while (count > 0);
+
+        flag = true;
     }
 
     leaf *l = malloc(sizeof(leaf));
