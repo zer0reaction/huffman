@@ -2,4 +2,4 @@
 
 set -xe
 
-gcc -Wall -Werror -std=c89 -g -o huffman huffman.c
+gcc -Wall -Wextra -std=c89 -g -o huffman huffman.c

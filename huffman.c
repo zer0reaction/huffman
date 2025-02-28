@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 typedef unsigned char char8_t;
 
@@ -28,22 +29,23 @@ void encode(const char *input_path, const char *output_path, leaf *root);
 void create_table(leaf *root, character_code (*table)[], character_code accum);
 void decode(const char *input_path, const char *output_path, leaf *root);
 string compile_tree(leaf *root);
+leaf *decompile_tree(string tree_string);
 
 int main(int argc, char **argv) {
-    leaf *root;
+    leaf *root, *decompiled;
     leaf **leaves = NULL;
     uint32_t leaves_count;
-
-    if (argc != 3) {
-        printf("Invalid use.\n");
-        exit(1);
-    }
+    string tree_string, new_tree_string;
 
     leaves_count = get_leaves(&leaves, argv[1]);
     root = create_tree(leaves, leaves_count);
 
-    encode(argv[1], argv[2], root);
-    decode(argv[2], "./decoded", root);
+    tree_string = compile_tree(root);
+    printf("%s\n", (char*)(tree_string.data));
+
+    decompiled = decompile_tree(tree_string);
+    new_tree_string = compile_tree(decompiled);
+    printf("%s\n", (char*)(tree_string.data));
 
     return 0;
 }
@@ -265,4 +267,69 @@ string compile_tree(leaf *root) {
     }
 
     return s;
+}
+
+leaf *decompile_tree(string tree_string) {
+    bool flag; /* 0 - left, 1 - right */
+    uint32_t i, count;
+    string l_str, r_str;
+
+    if (tree_string.len == 1) {
+        leaf *l = malloc(sizeof(leaf));
+
+        l->left = NULL;
+        l->right = NULL;
+        l->weight = 1;
+        l->symbol = (tree_string.data)[0];
+
+        return l;
+    }
+
+    for (i = 0; i < tree_string.len - 1; i++) {
+        (tree_string.data)[i] = (tree_string.data)[i + 1];
+    }
+    tree_string.len -= 2;
+
+    l_str.len = r_str.len = 0;
+    flag = false;
+    count = 0;
+
+    for (i = 0; i < tree_string.len;) {
+        if ((tree_string.data)[i] == '(') {
+            count = 0;
+
+            do {
+                if      ((tree_string.data)[i] == '(') count++;
+                else if ((tree_string.data)[i] == ')') count--;
+
+                if (!flag) {
+                    (l_str.data)[(l_str.len)++] = (tree_string.data)[i];
+                } else {
+                    (r_str.data)[(r_str.len)++] = (tree_string.data)[i];
+                }
+
+                i++;
+            } while (count > 0);
+
+            flag = true;
+        } else {
+            if (!flag) {
+                (l_str.data)[(l_str.len)++] = (tree_string.data)[i];
+            } else {
+                (r_str.data)[(r_str.len)++] = (tree_string.data)[i];
+            }
+
+            flag = true;
+            i++;
+        }
+    }
+
+    leaf *l = malloc(sizeof(leaf));
+
+    l->left = decompile_tree(l_str);
+    l->right = decompile_tree(r_str);
+    l->weight = 1;
+    l->symbol = 0;
+
+    return l;
 }
