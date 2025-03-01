@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 
 typedef unsigned char char8_t;
 
@@ -25,27 +26,26 @@ typedef struct {
 void sort_leaves(leaf **leaves, uint32_t len);
 uint32_t get_leaves(leaf ***l, const char *path);
 leaf *create_tree(leaf **leaves, uint32_t leaves_count);
-void encode(const char *input_path, const char *output_path, leaf *root);
+void encode(const char *input_path, const char *output_path);
 void create_table(leaf *root, character_code (*table)[], character_code accum);
-void decode(const char *input_path, const char *output_path, leaf *root);
+void decode(const char *input_path, const char *output_path);
 string compile_tree(leaf *root);
 leaf *decompile_tree(string tree_string);
 
 int main(int argc, char **argv) {
-    leaf *root, *decompiled;
-    leaf **leaves = NULL;
-    uint32_t leaves_count;
-    string tree_string, new_tree_string;
+    if (argc != 4) {
+        printf("Incorrect usage.\n");
+        exit(1);
+    }
 
-    leaves_count = get_leaves(&leaves, argv[1]);
-    root = create_tree(leaves, leaves_count);
-
-    tree_string = compile_tree(root);
-    printf("%s\n\n\n", (char*)(tree_string.data));
-
-    decompiled = decompile_tree(tree_string);
-    new_tree_string = compile_tree(decompiled);
-    printf("%s\n\n\n", (char*)(new_tree_string.data));
+    if (strcmp("enc", argv[1]) == 0) {
+        encode(argv[2], argv[3]);
+    } else if (strcmp("dec", argv[1]) == 0) {
+        decode(argv[2], argv[3]);
+    } else {
+        printf("Incorrect usage.\n");
+        exit(1);
+    }
 
     return 0;
 }
@@ -148,15 +148,11 @@ leaf *create_tree(leaf **leaves, uint32_t leaves_count) {
     return leaves[0];
 }
 
-/* TODO: make compression like 8 times better */
-void encode(const char *input_path, const char *output_path, leaf *root) {
-    int c;
-    uint64_t i;
-    uint64_t file_size;
+void encode(const char *input_path, const char *output_path) {
+    int input_char;
+    char8_t encoded_char;
+    uint8_t offset, encoded_char_pos;
     character_code table[256] = { 0 };
-
-    character_code accum;
-    create_table(root, &table, accum);
 
     FILE *input_file = fopen(input_path, "rb");
     FILE *output_file = fopen(output_path, "a");
@@ -166,50 +162,146 @@ void encode(const char *input_path, const char *output_path, leaf *root) {
         exit(1);
     }
 
-    fseek(input_file, 0, SEEK_END);
-    file_size = ftell(input_file);
-    fseek(input_file, 0, SEEK_SET);
+    leaf **leaves;
+    uint32_t leaves_count = get_leaves(&leaves, input_path);
+    leaf *root = create_tree(leaves, leaves_count);
 
-    i = 0;
-    c = fgetc(input_file);
-    while (c != EOF) {
-        fprintf(output_file, "%s", table[c].code);
-        c = fgetc(input_file);
-        i++;
-        printf("Encoding progress: %ld / %ld\r", i, file_size);
+    character_code accum;
+    create_table(root, &table, accum);
+
+    /* <tree string size 4 bytes><tree string n bytes><offset 1 byte><file contents> */
+
+    string s = compile_tree(root);
+    offset = (8 - (s.len % 8)) % 8;
+
+    fwrite(&(s.len), 4, 1, output_file);
+    fprintf(output_file, "%s", s.data);
+    fwrite(&offset, 1, 1, output_file);
+
+    encoded_char = 0;
+    encoded_char_pos = offset;
+
+    input_char = fgetc(input_file);
+    while (input_char != EOF) {
+        if (input_char == '0') {
+            switch (encoded_char_pos) {
+                case 0:
+                    encoded_char &= 0b01111111;
+                    break;
+                case 1:
+                    encoded_char &= 0b10111111;
+                    break;
+                case 2:
+                    encoded_char &= 0b11011111;
+                    break;
+                case 3:
+                    encoded_char &= 0b11101111;
+                    break;
+                case 4:
+                    encoded_char &= 0b11110111;
+                    break;
+                case 5:
+                    encoded_char &= 0b11111011;
+                    break;
+                case 6:
+                    encoded_char &= 0b11111101;
+                    break;
+                case 7:
+                    encoded_char &= 0b11111110;
+                    break;
+            }
+        } else if (input_char == '1') {
+            switch (encoded_char_pos) {
+                case 0:
+                    encoded_char |= 0b10000000;
+                    break;
+                case 1:
+                    encoded_char |= 0b01000000;
+                    break;
+                case 2:
+                    encoded_char |= 0b00100000;
+                    break;
+                case 3:
+                    encoded_char |= 0b00010000;
+                    break;
+                case 4:
+                    encoded_char |= 0b00001000;
+                    break;
+                case 5:
+                    encoded_char |= 0b00000100;
+                    break;
+                case 6:
+                    encoded_char |= 0b00000010;
+                    break;
+                case 7:
+                    encoded_char |= 0b00000001;
+                    break;
+            }
+        }
+        encoded_char_pos++;
+
+        if (encoded_char_pos == 8) {
+            encoded_char_pos = 0;
+            fwrite(&encoded_char, 1, 1, output_file);
+            encoded_char = 0;
+        }
+
+        input_char = fgetc(input_file);
     }
-    printf("\n");
 
     fclose(input_file);
     fclose(output_file);
 }
 
-void decode(const char *input_path, const char *output_path, leaf *root) {
-    int c;
+void decode(const char *input_path, const char *output_path) {
+    int input_file_char;
     FILE *input_file = fopen(input_path, "rb");
     FILE *output_file = fopen(output_path, "a");
-    leaf *leaf_ptr = root;
+
+    uint8_t offset, encoded_char_pos;
+    uint32_t tree_string_size;
+    string tree_string;
+
+    /* <tree string size 4 bytes><tree string n bytes><offset 1 byte><file contents> */
 
     if (input_file == NULL || output_file == NULL) {
         printf("Can't open files.\n");
         exit(1);
     }
 
-    c = 1;
-    while (c != EOF) {
-        if (leaf_ptr->left == NULL && leaf_ptr->right == NULL) {
-            fputc(leaf_ptr->symbol, output_file);
-            leaf_ptr = root;
-            continue;
-        }
+    fread(&tree_string_size, 4, 1, input_file);
+    fread(tree_string.data, tree_string_size, 1, input_file);
+    tree_string.len = tree_string_size;
+    fread(&offset, 1, 1, input_file);
 
-        c = fgetc(input_file);
-        if (c == '0') {
-            leaf_ptr = leaf_ptr->left;
-        } else if (c == '1') {
-            leaf_ptr = leaf_ptr->right;
+    leaf *root = decompile_tree(tree_string);
+    leaf *leaf_ptr = root;
+
+    encoded_char_pos = offset;
+
+    do {
+        input_file_char = fgetc(input_file);
+
+        while (encoded_char_pos < 8) {
+            if (leaf_ptr->left == NULL && leaf_ptr->right == NULL) {
+                fputc(leaf_ptr->symbol, output_file);
+                leaf_ptr = root;
+                continue;
+            }
+
+            uint8_t mask = 0b10000000;
+            mask >>= encoded_char_pos;
+
+            if (input_file_char & mask) {
+                leaf_ptr = leaf_ptr->right;
+            } else {
+                leaf_ptr = leaf_ptr->left;
+            }
+
+            encoded_char_pos++;
         }
-    }
+        encoded_char_pos = 0;
+    } while (input_file_char != EOF);
 
     fclose(input_file);
     fclose(output_file);
