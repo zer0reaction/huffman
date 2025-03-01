@@ -240,18 +240,16 @@ string compile_tree(leaf *root) {
     if (root->left == NULL && root->right == NULL) {
         if (root->symbol == '(' || root->symbol == ')' || root->symbol == '\\') {
             string s;
-            s.len = 4;
-            (s.data)[0] = '(';
-            (s.data)[1] = '\\';
-            (s.data)[2] = root->symbol;
-            (s.data)[3] = ')';
+            s.len = 2;
+            (s.data)[0] = '\\';
+            (s.data)[1] = root->symbol;
+            (s.data)[2] = 0;
             return s;
         } else {
             string s;
-            s.len = 3;
-            (s.data)[0] = '(';
-            (s.data)[1] = root->symbol;
-            (s.data)[2] = ')';
+            s.len = 1;
+            (s.data)[0] = root->symbol;
+            (s.data)[1] = 0;
             return s;
         }
     }
@@ -288,25 +286,25 @@ string compile_tree(leaf *root) {
 
 leaf *decompile_tree(string tree_string) {
     bool flag; /* 0 - left, 1 - right */
-    uint32_t i, count;
+    uint32_t i;
     string l_str, r_str;
 
-    if (tree_string.len == 3) {
+    if (tree_string.len == 1) {
+        leaf *l = malloc(sizeof(leaf));
+
+        l->left = NULL;
+        l->right = NULL;
+        l->weight = 1;
+        l->symbol = (tree_string.data)[0];
+
+        return l;
+    } else if (tree_string.len == 2 && (tree_string.data)[0] == '\\') {
         leaf *l = malloc(sizeof(leaf));
 
         l->left = NULL;
         l->right = NULL;
         l->weight = 1;
         l->symbol = (tree_string.data)[1];
-
-        return l;
-    } else if (tree_string.len == 4 && (tree_string.data)[1] == '\\') {
-        leaf *l = malloc(sizeof(leaf));
-
-        l->left = NULL;
-        l->right = NULL;
-        l->weight = 1;
-        l->symbol = (tree_string.data)[2];
 
         return l;
     }
@@ -320,32 +318,75 @@ leaf *decompile_tree(string tree_string) {
     flag = false;
 
     for (i = 0; i < tree_string.len;) {
-        count = 0;
-
-        do {
-            char8_t c = (tree_string.data)[i];
-
-            if (c == '\\') {
-                if (!flag) {
-                    (l_str.data)[(l_str.len)++] = (tree_string.data)[i];
-                } else {
-                    (r_str.data)[(r_str.len)++] = (tree_string.data)[i];
-                }
-                i++;
-            } else if (c == '(') {
-                count++;
-            } else if (c == ')') {
-                count--;
-            }
-
+        if ((tree_string.data)[i] == '\\') {
             if (!flag) {
                 (l_str.data)[(l_str.len)++] = (tree_string.data)[i];
+                (l_str.data)[(l_str.len)++] = (tree_string.data)[i + 1];
+                (l_str.data)[l_str.len] = 0;
             } else {
                 (r_str.data)[(r_str.len)++] = (tree_string.data)[i];
+                (r_str.data)[(r_str.len)++] = (tree_string.data)[i + 1];
+                (r_str.data)[r_str.len] = 0;
             }
 
+            i += 2;
+        } else if ((tree_string.data)[i] == '(') {
+            uint32_t count = 0;
+
+            do {
+                if ((tree_string.data)[i] == '\\') {
+                    if (!flag) {
+                        (l_str.data)[(l_str.len)++] = (tree_string.data)[i];
+                        (l_str.data)[(l_str.len)++] = (tree_string.data)[i + 1];
+                        (l_str.data)[l_str.len] = 0;
+                    } else {
+                        (r_str.data)[(r_str.len)++] = (tree_string.data)[i];
+                        (r_str.data)[(r_str.len)++] = (tree_string.data)[i + 1];
+                        (r_str.data)[r_str.len] = 0;
+                    }
+
+                    i += 2;
+                } else if ((tree_string.data)[i] == '(') {
+                    if (!flag) {
+                        (l_str.data)[(l_str.len)++] = (tree_string.data)[i];
+                        (l_str.data)[l_str.len] = 0;
+                    } else {
+                        (r_str.data)[(r_str.len)++] = (tree_string.data)[i];
+                        (r_str.data)[r_str.len] = 0;
+                    }
+                    count++;
+                    i++;
+                } else if ((tree_string.data)[i] == ')') {
+                    if (!flag) {
+                        (l_str.data)[(l_str.len)++] = (tree_string.data)[i];
+                        (l_str.data)[l_str.len] = 0;
+                    } else {
+                        (r_str.data)[(r_str.len)++] = (tree_string.data)[i];
+                        (r_str.data)[r_str.len] = 0;
+                    }
+                    count--;
+                    i++;
+                } else {
+                    if (!flag) {
+                        (l_str.data)[(l_str.len)++] = (tree_string.data)[i];
+                        (l_str.data)[l_str.len] = 0;
+                    } else {
+                        (r_str.data)[(r_str.len)++] = (tree_string.data)[i];
+                        (r_str.data)[r_str.len] = 0;
+                    }
+                    i++;
+                }
+            } while (count);
+        } else {
+            if (!flag) {
+                (l_str.data)[(l_str.len)++] = (tree_string.data)[i];
+                (l_str.data)[l_str.len] = 0;
+            } else {
+                (r_str.data)[(r_str.len)++] = (tree_string.data)[i];
+                (r_str.data)[r_str.len] = 0;
+            }
             i++;
-        } while (count > 0);
+        }
 
         flag = true;
     }
