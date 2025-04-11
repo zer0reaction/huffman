@@ -157,6 +157,7 @@ c8 **codes_gen(Arena *a, Leaf *root) {
     c8 **codes;
 
     codes = da_create(a, c8 *, 256);
+    memset(codes, 0, 256);
     buf = da_create(a, c8, 0);
 
     code_gen(a, codes, buf, root);
