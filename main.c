@@ -133,6 +133,7 @@ void tree_print(Leaf *root) {
 
     printf("[");
     tree_print(root->left);
+    printf(", ");
     tree_print(root->right);
     printf("]");
 }
@@ -150,6 +151,7 @@ i32 main(int argc, char **argv) {
     data = fload(&a, argv[1]);
     leaves = leaves_get(&a, data);
     root = tree_build(&a, leaves);
+    tree_print(root);
 
     arena_free(&a);
     return 0;
