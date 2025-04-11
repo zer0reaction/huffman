@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#define ARENA_REGION_DEFAULT_CAPACITY (128)
+#define ARENA_REGION_REALLOC_CAPACITY (128)
 #define ARENA_IMPLEMENTATION
 #define DA_IMPLEMENTATION
 #include "../util/da.h"
