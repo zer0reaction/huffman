@@ -64,10 +64,83 @@ Leaf *leaves_get(Arena *a, u8 *data) {
     return leaves;
 }
 
-int main(int argc, char **argv) {
+void ptrs_sort(Leaf **ptrs) {
+    u64 i, j;
+
+    for (i = 1; i < da_size(ptrs); ++i) {
+        for (j = 0; j < da_size(ptrs) - i; ++j) {
+            if (ptrs[j]->weight > ptrs[j + 1]->weight) {
+                Leaf *temp;
+                temp = ptrs[j];
+                ptrs[j] = ptrs[j + 1];
+                ptrs[j + 1] = temp;
+            }
+        }
+    }
+}
+
+void leaves_print(Leaf *leaves) {
+    u64 i;
+
+    for (i = 0; i < da_size(leaves); ++i) {
+        printf("[%c, %lu]\n", (c8)(leaves[i].value), leaves[i].weight);
+    }
+}
+
+Leaf *tree_build(Arena *a, Leaf *leaves) {
+    u64 i, depth;
+    Leaf **ptrs;
+
+    ptrs = da_create(a, Leaf *, 0);
+
+    for (i = 0; i < da_size(leaves); ++i) {
+        da_push_back(ptrs, &(leaves[i]));
+    }
+
+    depth = 1;
+
+    while (da_size(ptrs) > 1) {
+        Leaf *lp;
+
+        ptrs_sort(ptrs);
+
+        lp = arena_alloc(a, sizeof(Leaf));
+
+        lp->left = ptrs[0];
+        lp->right = ptrs[1];
+        lp->weight = ptrs[0]->weight + ptrs[1]->weight;
+        lp->value = 0;
+
+        da_pop(ptrs, 0);
+        da_pop(ptrs, 0);
+        da_push(ptrs, 0, lp);
+
+        depth++;
+    }
+
+    DEBUG_INFO("tree_build", ("Created tree with depth %lu", depth));
+
+    return ptrs[0];
+}
+
+void tree_print(Leaf *root) {
+    if (root == NULL) return;
+
+    if (root->left == NULL && root->right == NULL) {
+        printf("%c", (char)root->value);
+        return;
+    }
+
+    printf("[");
+    tree_print(root->left);
+    tree_print(root->right);
+    printf("]");
+}
+
+i32 main(int argc, char **argv) {
     Arena a = {0};
     u8 *data;
-    Leaf *leaves;
+    Leaf *leaves, *root;
 
     if (argc != 2) {
         printf("Incorrect usage.\n");
@@ -76,6 +149,7 @@ int main(int argc, char **argv) {
 
     data = fload(&a, argv[1]);
     leaves = leaves_get(&a, data);
+    root = tree_build(&a, leaves);
 
     arena_free(&a);
     return 0;
