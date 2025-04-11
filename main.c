@@ -1,5 +1,6 @@
 #include <stdio.h>
 
+#define ARENA_REGION_DEFAULT_CAPACITY (128)
 #define ARENA_IMPLEMENTATION
 #define DA_IMPLEMENTATION
 #include "../util/da.h"
@@ -88,7 +89,7 @@ void leaves_print(Leaf *leaves) {
 }
 
 Leaf *tree_build(Arena *a, Leaf *leaves) {
-    u64 i, depth;
+    u64 i;
     Leaf **ptrs;
 
     ptrs = da_create(a, Leaf *, 0);
@@ -96,8 +97,6 @@ Leaf *tree_build(Arena *a, Leaf *leaves) {
     for (i = 0; i < da_size(leaves); ++i) {
         da_push_back(ptrs, &(leaves[i]));
     }
-
-    depth = 1;
 
     while (da_size(ptrs) > 1) {
         Leaf *lp;
@@ -114,11 +113,9 @@ Leaf *tree_build(Arena *a, Leaf *leaves) {
         da_pop(ptrs, 0);
         da_pop(ptrs, 0);
         da_push(ptrs, 0, lp);
-
-        depth++;
     }
 
-    DEBUG_INFO("tree_build", ("Created tree with depth %lu", depth));
+    DEBUG_INFO("tree_build", ("Built tree"));
 
     return ptrs[0];
 }
@@ -138,10 +135,42 @@ void tree_print(Leaf *root) {
     printf("]");
 }
 
-i32 main(int argc, char **argv) {
+void code_gen(Arena *a, c8 **codes, c8 *buf, Leaf *root) {
+    c8 *buf_left, *buf_right;
+
+    if (root->left == NULL && root->right == NULL) {
+        codes[root->value] = da_clone(a, buf);
+        return;
+    }
+
+    buf_left = da_clone(a, buf);
+    buf_right = da_clone(a, buf);
+    da_push_back(buf_left, '0');
+    da_push_back(buf_right, '1');
+
+    code_gen(a, codes, buf_left, root->left);
+    code_gen(a, codes, buf_right, root->right);
+}
+
+c8 **codes_gen(Arena *a, Leaf *root) {
+    c8 *buf;
+    c8 **codes;
+
+    codes = da_create(a, c8 *, 256);
+    buf = da_create(a, c8, 0);
+
+    code_gen(a, codes, buf, root);
+
+    DEBUG_INFO("codes_gen", ("Generated codes"));
+
+    return codes;
+}
+
+int main(int argc, char **argv) {
     Arena a = {0};
     u8 *data;
     Leaf *leaves, *root;
+    c8 **codes;
 
     if (argc != 2) {
         printf("Incorrect usage.\n");
@@ -151,7 +180,7 @@ i32 main(int argc, char **argv) {
     data = fload(&a, argv[1]);
     leaves = leaves_get(&a, data);
     root = tree_build(&a, leaves);
-    tree_print(root);
+    codes = codes_gen(&a, root);
 
     arena_free(&a);
     return 0;
