@@ -157,7 +157,7 @@ c8 **codes_gen(Arena *a, Leaf *root) {
     c8 **codes;
 
     codes = da_create(a, c8 *, 256);
-    memset(codes, 0, 256);
+    memset(codes, 0, 256 * sizeof(*codes));
     buf = da_create(a, c8, 0);
 
     code_gen(a, codes, buf, root);
@@ -165,6 +165,20 @@ c8 **codes_gen(Arena *a, Leaf *root) {
     DEBUG_INFO("codes_gen", ("Generated codes"));
 
     return codes;
+}
+
+void codes_print(c8 **codes) {
+    u64 i, j;
+
+    for (i = 0; i < da_size(codes); ++i) {
+        if (!codes[i]) continue;
+
+        printf("%c ", (char)i);
+        for (j = 0; j < da_size(codes[i]); ++j) {
+            putchar(codes[i][j]);
+        }
+        printf("\n");
+    }
 }
 
 int main(int argc, char **argv) {
@@ -182,6 +196,7 @@ int main(int argc, char **argv) {
     leaves = leaves_get(&a, data);
     root = tree_build(&a, leaves);
     codes = codes_gen(&a, root);
+    codes_print(codes);
 
     arena_free(&a);
     return 0;
