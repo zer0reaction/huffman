@@ -181,6 +181,21 @@ void codes_print(c8 **codes) {
     }
 }
 
+void encode_test(u8 *data, c8 **codes) {
+    u64 i, j;
+    FILE *fp;
+
+    fp = fopen("./encode_test.hz", "a");
+
+    for (i = 0; i < da_size(data); ++i) {
+        for (j = 0; j < da_size(codes[data[i]]); ++j) {
+            fputc(codes[data[i]][j], fp);
+        }
+    }
+
+    fclose(fp);
+}
+
 int main(int argc, char **argv) {
     Arena a = {0};
     u8 *data;
@@ -196,7 +211,7 @@ int main(int argc, char **argv) {
     leaves = leaves_get(&a, data);
     root = tree_build(&a, leaves);
     codes = codes_gen(&a, root);
-    codes_print(codes);
+    encode_test(data, codes);
 
     arena_free(&a);
     return 0;
