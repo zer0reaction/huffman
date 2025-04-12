@@ -193,12 +193,46 @@ void encode_test(u8 *data, c8 **codes) {
         }
     }
 
+    DEBUG_INFO("encode_test", ("Testing encoding to encode_test.hz"));
+
+    fclose(fp);
+}
+
+void decode_test(u8 *data, Leaf *root) {
+    u64 i;
+    FILE *fp;
+    Leaf *cur;
+
+    fp = fopen("./decode_test", "a");
+
+    cur = root;
+
+    for (i = 0; i < da_size(data); ++i) {
+        if (cur->left == NULL && cur->right == NULL) {
+            fputc(cur->value, fp);
+            cur = root;
+        }
+
+        if (data[i] == '0') {
+            cur = cur->left;
+        } else if (data[i] == '1') {
+            cur = cur->right;
+        } else {
+            printf("Error in test decoding\n");
+            exit(1);
+        }
+    }
+    fputc(cur->value, fp);
+
+    DEBUG_INFO("decode_test", ("Testing decoding to decode_test"));
+
     fclose(fp);
 }
 
 int main(int argc, char **argv) {
     Arena a = {0};
     u8 *data;
+    u8 *encoded_data;
     Leaf *leaves, *root;
     c8 **codes;
 
@@ -211,7 +245,11 @@ int main(int argc, char **argv) {
     leaves = leaves_get(&a, data);
     root = tree_build(&a, leaves);
     codes = codes_gen(&a, root);
+
     encode_test(data, codes);
+
+    encoded_data = fload(&a, "./encode_test.hz");
+    decode_test(encoded_data, root);
 
     arena_free(&a);
     return 0;
