@@ -229,10 +229,53 @@ void decode_test(u8 *data, Leaf *root) {
     fclose(fp);
 }
 
+void ts_print(u8 *ts) {
+    u64 i;
+
+    for (i = 0; i < da_size(ts); ++i) {
+        putchar(ts[i]);
+    }
+    printf("\n");
+}
+
+u8 *ts_build(Arena *a, Leaf *root) {
+    u8 *ret;
+    u8 *l, *r;
+
+    if (root->left == NULL && root->right == NULL) {
+        u8 *ch;
+        u8 val = root->value;
+
+        if (val == '[' || val == ']' || val == '\\') {
+            ch = da_create(a, u8, 2);
+            ch[0] = '\\';
+            ch[1] = val;
+        } else {
+            ch = da_create(a, u8, 1);
+            ch[0] = val;
+        }
+
+        return ch;
+    }
+
+    l = ts_build(a, root->left);
+    r = ts_build(a, root->right);
+
+    ret = da_create(a, u8, 0);
+
+    da_push_back(ret, '[');
+    da_append(ret, l);
+    da_append(ret, r);
+    da_push_back(ret, ']');
+
+    return ret;
+}
+
 int main(int argc, char **argv) {
     Arena a = {0};
     u8 *data;
     u8 *encoded_data;
+    u8 *ts;
     Leaf *leaves, *root;
     c8 **codes;
 
@@ -246,10 +289,8 @@ int main(int argc, char **argv) {
     root = tree_build(&a, leaves);
     codes = codes_gen(&a, root);
 
-    encode_test(data, codes);
-
-    encoded_data = fload(&a, "./encode_test.hz");
-    decode_test(encoded_data, root);
+    ts = ts_build(&a, root);
+    ts_print(ts);
 
     arena_free(&a);
     return 0;
