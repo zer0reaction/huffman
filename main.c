@@ -115,8 +115,6 @@ Leaf *tree_build(Arena *a, Leaf *leaves) {
         da_push(ptrs, 0, lp);
     }
 
-    DEBUG_INFO("tree_build", ("Built tree"));
-
     return ptrs[0];
 }
 
@@ -161,8 +159,6 @@ c8 **codes_gen(Arena *a, Leaf *root) {
     buf = da_create(a, c8, 0);
 
     code_gen(a, codes, buf, root);
-
-    DEBUG_INFO("codes_gen", ("Generated codes"));
 
     return codes;
 }
