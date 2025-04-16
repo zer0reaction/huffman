@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <assert.h>
 
 #define ARENA_REGION_REALLOC_CAPACITY (128)
 #define ARENA_IMPLEMENTATION
@@ -229,9 +230,13 @@ void ts_print(u8 *ts) {
     u64 i;
 
     for (i = 0; i < da_size(ts); ++i) {
-        putchar(ts[i]);
+        if (ts[i] == '\n') {
+            printf("\\n");
+        } else if (ts[i] < 128) {
+            putchar(ts[i]);
+        }
     }
-    printf("\n");
+    printf("\n\n");
 }
 
 u8 *ts_build(Arena *a, Leaf *root) {
@@ -267,12 +272,82 @@ u8 *ts_build(Arena *a, Leaf *root) {
     return ret;
 }
 
+Leaf *leaf_new(Arena *a, u8 value) {
+    Leaf *l;
+
+    l = arena_alloc(a, sizeof(Leaf));
+    l->left = l->right = NULL;
+    l->weight = 0;
+    l->value = value;
+
+    return l;
+}
+
+Leaf *ts_decode(Arena *a, u8 *begin, u8 *end) {
+    u8 *cur;
+    Leaf *left, *right, *ret;
+
+    if (end - begin == 1) {
+        return leaf_new(a, begin[0]);
+    } else if (end - begin == 2 && begin[0] == '\\') {
+        return leaf_new(a, begin[1]);
+    }
+
+    cur = begin;
+    left = right = NULL;
+
+    while (cur < end) {
+        if (cur[0] == '\\') {
+            Leaf *temp;
+
+            temp = ts_decode(a, cur, cur + 2);
+            left == NULL ? (left = temp) : (right = temp);
+
+            cur += 2;
+        } else if (cur[0] != '[' && cur[0] != ']') {
+            Leaf *temp;
+
+            temp = ts_decode(a, cur, cur + 1);
+            left == NULL ? (left = temp) : (right = temp);
+
+            cur += 1;
+        } else if (cur[0] == '[') {
+            Leaf *temp;
+            u8 *l, *r;
+            u64 count;
+
+            count = 0;
+            l = cur + 1;
+
+            do {
+                if (cur[0] == '\\') cur++;
+                else if (cur[0] == '[') count++;
+                else if (cur[0] == ']') count--;
+                cur++;
+            } while (count > 0);
+
+            r = cur - 1;
+
+            temp = ts_decode(a, l, r);
+            left == NULL ? (left = temp) : (right = temp);
+        } else assert(0);
+    }
+
+    ret = arena_alloc(a, sizeof(Leaf));
+    ret->left = left;
+    ret->right = right;
+    ret->weight = 0;
+    ret->value = 0;
+
+    return ret;
+}
+
 int main(int argc, char **argv) {
     Arena a = {0};
     u8 *data;
     u8 *encoded_data;
     u8 *ts;
-    Leaf *leaves, *root;
+    Leaf *leaves, *root, *dec;
     c8 **codes;
 
     if (argc != 2) {
@@ -286,6 +361,10 @@ int main(int argc, char **argv) {
     codes = codes_gen(&a, root);
 
     ts = ts_build(&a, root);
+    ts_print(ts);
+
+    dec = ts_decode(&a, ts + 1, ts + da_size(ts) - 1);
+    ts = ts_build(&a, dec);
     ts_print(ts);
 
     arena_free(&a);
