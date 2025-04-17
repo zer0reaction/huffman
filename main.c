@@ -368,12 +368,22 @@ void write_bit(FILE *fp, c8 bit, util_bool force) {
     accum++;
 }
 
-void encode(u8 *data, c8 **codes, u8 *ts) {
+void encode(const char *input_path, const char *output_path) {
+    Arena a = {0};
     FILE *fp;
     u64 i, j, ts_len;
+    u8 *data, *ts;
+    Leaf *leaves, *root;
+    c8 **codes;
 
-    fp = fopen("./encoded.hz", "ab");
-    assert(fp);
+    fp = fopen(output_path, "wb");
+    assert (fp);
+
+    data = fload(&a, input_path);
+    leaves = leaves_get(&a, data);
+    root = tree_build(&a, leaves);
+    codes = codes_gen(&a, root);
+    ts = ts_build(&a, root);
 
     /* ts len, ts, encoded */
     ts_len = da_size(ts);
@@ -391,29 +401,16 @@ void encode(u8 *data, c8 **codes, u8 *ts) {
     write_bit(fp, 0, util_true);
 
     fclose(fp);
+    arena_free(&a);
 }
 
 int main(int argc, char **argv) {
-    Arena a = {0};
-    u8 *data;
-    u8 *encoded_data;
-    u8 *ts;
-    Leaf *leaves, *root, *dec;
-    c8 **codes;
-
-    if (argc != 2) {
+    if (argc != 3) {
         printf("Incorrect usage.\n");
         exit(1);
     }
 
-    data = fload(&a, argv[1]);
-    leaves = leaves_get(&a, data);
-    root = tree_build(&a, leaves);
-    codes = codes_gen(&a, root);
-    ts = ts_build(&a, root);
+    encode(argv[1], argv[2]);
 
-    encode(data, codes, ts);
-
-    arena_free(&a);
     return 0;
 }
