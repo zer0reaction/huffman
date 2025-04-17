@@ -368,10 +368,12 @@ void write_bit(FILE *fp, c8 bit, util_bool force) {
     accum++;
 }
 
+/* ts len, ts, initial size, data */
 void encode(const char *input_path, const char *output_path) {
     Arena a = {0};
+    Arena temp = {0};
     FILE *fp;
-    u64 i, j, ts_len;
+    u64 i, j, ts_len, init_size;
     u8 *data, *ts;
     Leaf *leaves, *root;
     c8 **codes;
@@ -380,16 +382,21 @@ void encode(const char *input_path, const char *output_path) {
     assert (fp);
 
     data = fload(&a, input_path);
-    leaves = leaves_get(&a, data);
-    root = tree_build(&a, leaves);
-    codes = codes_gen(&a, root);
-    ts = ts_build(&a, root);
 
-    /* ts len, ts, encoded */
+    leaves = leaves_get(&temp, data);
+    root = tree_build(&temp, leaves);
+    ts = ts_build(&temp, root);
+
     ts_len = da_size(ts);
-
     fwrite(&ts_len, sizeof(ts_len), 1, fp);
     fwrite(ts, ts_len, 1, fp);
+
+    codes = codes_gen(&a, root);
+
+    arena_free(&temp);
+    
+    init_size = da_size(data);
+    fwrite(&init_size, sizeof(init_size), 1, fp);
 
     for (i = 0; i < da_size(data); ++i) {
         u8 c = data[i];
