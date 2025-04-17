@@ -492,17 +492,25 @@ void decode(const char *input_path, const char *output_path) {
         else if (bit == '1') cur = cur->right;
     }
 
+    DEBUG_INFO("decode", ("Decoded file %s -> %s", input_path, output_path));
+
     arena_free(&a);
 }
 
 int main(int argc, char **argv) {
-    if (argc != 3) {
+    if (argc != 4) {
         printf("Incorrect usage.\n");
         exit(1);
     }
 
-    /* encode(argv[1], argv[2]); */
-    decode(argv[1], argv[2]);
+    if (strcmp(argv[1], "-c") == 0) {
+        encode(argv[2], argv[3]);
+    } else if (strcmp(argv[1], "-x") == 0) {
+        decode(argv[2], argv[3]);
+    } else {
+        printf("Incorrect usage.\n");
+        exit(1);
+    }
 
     return 0;
 }
