@@ -22,10 +22,7 @@ u8 *fload(Arena *a, const char *path) {
     u64 size;
 
     fp = fopen(path, "rb");
-    if (!fp) {
-        perror("fopen");
-        exit(1);
-    }
+    assert(fp);
 
     fseek(fp, 0, SEEK_END);
     size = ftell(fp);
@@ -183,6 +180,7 @@ void encode_test(u8 *data, c8 **codes) {
     FILE *fp;
 
     fp = fopen("./encode_test.hz", "a");
+    assert(fp);
 
     for (i = 0; i < da_size(data); ++i) {
         for (j = 0; j < da_size(codes[data[i]]); ++j) {
@@ -201,6 +199,7 @@ void decode_test(u8 *data, Leaf *root) {
     Leaf *cur;
 
     fp = fopen("./decode_test", "a");
+    assert(fp);
 
     cur = root;
 
@@ -342,6 +341,58 @@ Leaf *ts_decode(Arena *a, u8 *begin, u8 *end) {
     return ret;
 }
 
+void write_bit(FILE *fp, c8 bit, util_bool force) {
+    static u8 accum = 0;
+    static c8 c = 0;
+    c8 mask;
+
+    if (force && accum > 0) {
+        fwrite(&c, 1, 1, fp);
+        return;
+    }
+
+    if (accum == 8) {
+        fwrite(&c, 1, 1, fp);
+        accum = 0;
+        c = 0;
+    }
+
+    if (bit == '0') {
+        accum++;
+        return;
+    }
+
+    mask = 0x80; /* 0b10000000 */
+    mask >>= accum;
+    c |= mask;
+    accum++;
+}
+
+void encode(u8 *data, c8 **codes, u8 *ts) {
+    FILE *fp;
+    u64 i, j, ts_len;
+
+    fp = fopen("./encoded.hz", "ab");
+    assert(fp);
+
+    /* ts len, ts, encoded */
+    ts_len = da_size(ts);
+
+    fwrite(&ts_len, sizeof(ts_len), 1, fp);
+    fwrite(ts, ts_len, 1, fp);
+
+    for (i = 0; i < da_size(data); ++i) {
+        u8 c = data[i];
+
+        for (j = 0; j < da_size(codes[c]); ++j) {
+            write_bit(fp, codes[c][j], util_false);
+        }
+    }
+    write_bit(fp, 0, util_true);
+
+    fclose(fp);
+}
+
 int main(int argc, char **argv) {
     Arena a = {0};
     u8 *data;
@@ -359,13 +410,9 @@ int main(int argc, char **argv) {
     leaves = leaves_get(&a, data);
     root = tree_build(&a, leaves);
     codes = codes_gen(&a, root);
-
     ts = ts_build(&a, root);
-    ts_print(ts);
 
-    dec = ts_decode(&a, ts + 1, ts + da_size(ts) - 1);
-    ts = ts_build(&a, dec);
-    ts_print(ts);
+    encode(data, codes, ts);
 
     arena_free(&a);
     return 0;
