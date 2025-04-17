@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 #define ARENA_REGION_REALLOC_CAPACITY (128)
 #define ARENA_IMPLEMENTATION
@@ -352,6 +353,8 @@ void write_bit(FILE *fp, c8 bit, util_bool force) {
 
     if (force && accum > 0) {
         fwrite(&c, 1, 1, fp);
+        accum = 0;
+        c = 0;
         return;
     }
 
@@ -419,13 +422,87 @@ void encode(const char *input_path, const char *output_path) {
     arena_free(&a);
 }
 
+c8 read_bit(u8 *data, u64 pos) {
+    c8 c;
+    u8 off;
+
+    c = data[pos / 8];
+    off = pos % 8;
+
+    switch (off) {
+        case 0: return (c & 0x80) ? '1' : '0';
+        case 1: return (c & 0x40) ? '1' : '0';
+        case 2: return (c & 0x20) ? '1' : '0';
+        case 3: return (c & 0x10) ? '1' : '0';
+        case 4: return (c & 0x08) ? '1' : '0';
+        case 5: return (c & 0x04) ? '1' : '0';
+        case 6: return (c & 0x02) ? '1' : '0';
+        case 7: return (c & 0x01) ? '1' : '0';
+        default: assert(0);
+    }
+}
+
+/* ts len (8 bytes), ts, initial size (8 bytes), data */
+void decode(const char *input_path, const char *output_path) {
+    Arena a = {0};
+    Arena temp = {0};
+    FILE *fp;
+    u8 *data, *enc, *ts;
+    u64 i, written, ts_len, init_size;
+    Leaf *cur, *root;
+
+    fp = fopen(output_path, "ab");
+    assert(fp);
+
+    data = fload(&temp, input_path);
+
+    memcpy(&ts_len, data, 8);
+    ts = da_create(&temp, u8, ts_len);
+    memcpy(ts, data + 8, ts_len);
+
+    memcpy(&init_size, data + 8 + ts_len, 8);
+
+    enc = da_create(&a, u8, da_size(data) - 8 - ts_len - 8);
+    memcpy(enc, data + 8 + ts_len + 8, da_size(enc));
+
+    root = ts_decode(&a, ts + 1, ts + da_size(ts) - 1);
+
+    arena_free(&temp);
+
+    cur = root;
+
+    written = 0;
+    i = 0;
+
+    while (1) {
+        c8 bit;
+
+        if (written == init_size) break;
+
+        if (cur->left == NULL && cur->right == NULL) {
+            fwrite(&(cur->value), 1, 1, fp);
+            cur = root;
+            written++;
+        }
+
+        bit = read_bit(enc, i);
+        i++;
+
+        if (bit == '0') cur = cur->left;
+        else if (bit == '1') cur = cur->right;
+    }
+
+    arena_free(&a);
+}
+
 int main(int argc, char **argv) {
     if (argc != 3) {
         printf("Incorrect usage.\n");
         exit(1);
     }
 
-    encode(argv[1], argv[2]);
+    /* encode(argv[1], argv[2]); */
+    decode(argv[1], argv[2]);
 
     return 0;
 }
