@@ -113,6 +113,8 @@ Leaf *tree_build(Arena *a, Leaf *leaves) {
         da_push(ptrs, 0, lp);
     }
 
+    DEBUG_INFO("tree_build", ("Built tree"));
+
     return ptrs[0];
 }
 
@@ -157,6 +159,8 @@ c8 **codes_gen(Arena *a, Leaf *root) {
     buf = da_create(a, c8, 0);
 
     code_gen(a, codes, buf, root);
+
+    DEBUG_INFO("codes_gen", ("Generated codes"));
 
     return codes;
 }
@@ -368,7 +372,7 @@ void write_bit(FILE *fp, c8 bit, util_bool force) {
     accum++;
 }
 
-/* ts len, ts, initial size, data */
+/* ts len (8 bytes), ts, initial size (8 bytes), data */
 void encode(const char *input_path, const char *output_path) {
     Arena a = {0};
     Arena temp = {0};
@@ -404,8 +408,12 @@ void encode(const char *input_path, const char *output_path) {
         for (j = 0; j < da_size(codes[c]); ++j) {
             write_bit(fp, codes[c][j], util_false);
         }
+
+        /* TODO: add progress */
     }
     write_bit(fp, 0, util_true);
+
+    DEBUG_INFO("encode", ("Encoded file %s -> %s", input_path, output_path));
 
     fclose(fp);
     arena_free(&a);
