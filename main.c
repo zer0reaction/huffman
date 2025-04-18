@@ -305,16 +305,21 @@ void encode(const char *input_path, const char *output_path) {
     init_size = da_size(data);
     fwrite(&init_size, sizeof(init_size), 1, fp);
 
-    for (i = 0; i < da_size(data); ++i) {
+    for (i = 0; i < init_size; ++i) {
         u8 c = data[i];
 
         for (j = 0; j < da_size(codes[c]); ++j) {
             write_bit(fp, codes[c][j], util_false);
         }
 
-        /* TODO: add progress */
+        if (i % 1000000 == 0) {
+            fprintf(stdout, "\33[2K\rEncoding progress: %f%%", (float) i / init_size * 100.0);
+            fflush(stdout);
+        }
     }
     write_bit(fp, 0, util_true);
+
+    fprintf(stdout, "\33[2K\rEncoding progress: 100%%\n");
 
     DEBUG_INFO("encode", ("Encoded file %s -> %s", input_path, output_path));
 
@@ -390,7 +395,14 @@ void decode(const char *input_path, const char *output_path) {
 
         if (bit == '0') cur = cur->left;
         else if (bit == '1') cur = cur->right;
+
+        if (i % 1000000 == 0) {
+            fprintf(stdout, "\33[2K\rDecoding progress: %f%%", (float) written / init_size * 100.0);
+            fflush(stdout);
+        }
     }
+
+    fprintf(stdout, "\33[2K\rDecoding progress: 100%%\n");
 
     DEBUG_INFO("decode", ("Decoded file %s -> %s", input_path, output_path));
 
