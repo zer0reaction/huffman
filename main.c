@@ -17,7 +17,7 @@ struct Leaf {
     u8 value;
 };
 
-u8 *fload(Arena *a, const char *path) {
+u8 *file_load(Arena *a, const char *path) {
     FILE *fp;
     u8 *data;
     u64 size;
@@ -32,7 +32,7 @@ u8 *fload(Arena *a, const char *path) {
     data = da_create(a, u8, size);
     fread(data, size, 1, fp);
 
-    DEBUG_INFO("fload", ("Loaded %s, %lu bytes", path, size));
+    DEBUG_INFO("file_load", ("Loaded %s, %lu bytes", path, size));
 
     fclose(fp);
     return data;
@@ -288,7 +288,7 @@ void encode(const char *input_path, const char *output_path) {
     fp = fopen(output_path, "wb");
     assert (fp);
 
-    data = fload(&a, input_path);
+    data = file_load(&a, input_path);
 
     leaves = leaves_get(&temp, data);
     root = tree_build(&temp, leaves);
@@ -359,7 +359,7 @@ void decode(const char *input_path, const char *output_path) {
     fp = fopen(output_path, "ab");
     assert(fp);
 
-    data = fload(&temp, input_path);
+    data = file_load(&temp, input_path);
 
     memcpy(&ts_len, data, 8);
     ts = da_create(&temp, u8, ts_len);
