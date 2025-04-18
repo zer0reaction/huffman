@@ -79,14 +79,6 @@ void ptrs_sort(Leaf **ptrs) {
     }
 }
 
-void leaves_print(Leaf *leaves) {
-    u64 i;
-
-    for (i = 0; i < da_size(leaves); ++i) {
-        printf("[%c, %lu]\n", (c8)(leaves[i].value), leaves[i].weight);
-    }
-}
-
 Leaf *tree_build(Arena *a, Leaf *leaves) {
     u64 i;
     Leaf **ptrs;
@@ -119,21 +111,6 @@ Leaf *tree_build(Arena *a, Leaf *leaves) {
     return ptrs[0];
 }
 
-void tree_print(Leaf *root) {
-    if (root == NULL) return;
-
-    if (root->left == NULL && root->right == NULL) {
-        printf("%c", (char)root->value);
-        return;
-    }
-
-    printf("[");
-    tree_print(root->left);
-    printf(", ");
-    tree_print(root->right);
-    printf("]");
-}
-
 void code_gen(Arena *a, c8 **codes, c8 *buf, Leaf *root) {
     c8 *buf_left, *buf_right;
 
@@ -164,83 +141,6 @@ c8 **codes_gen(Arena *a, Leaf *root) {
     DEBUG_INFO("codes_gen", ("Generated codes"));
 
     return codes;
-}
-
-void codes_print(c8 **codes) {
-    u64 i, j;
-
-    for (i = 0; i < da_size(codes); ++i) {
-        if (!codes[i]) continue;
-
-        printf("%c ", (char)i);
-        for (j = 0; j < da_size(codes[i]); ++j) {
-            putchar(codes[i][j]);
-        }
-        printf("\n");
-    }
-}
-
-void encode_test(u8 *data, c8 **codes) {
-    u64 i, j;
-    FILE *fp;
-
-    fp = fopen("./encode_test.hz", "a");
-    assert(fp);
-
-    for (i = 0; i < da_size(data); ++i) {
-        for (j = 0; j < da_size(codes[data[i]]); ++j) {
-            fputc(codes[data[i]][j], fp);
-        }
-    }
-
-    DEBUG_INFO("encode_test", ("Testing encoding to encode_test.hz"));
-
-    fclose(fp);
-}
-
-void decode_test(u8 *data, Leaf *root) {
-    u64 i;
-    FILE *fp;
-    Leaf *cur;
-
-    fp = fopen("./decode_test", "a");
-    assert(fp);
-
-    cur = root;
-
-    for (i = 0; i < da_size(data); ++i) {
-        if (cur->left == NULL && cur->right == NULL) {
-            fputc(cur->value, fp);
-            cur = root;
-        }
-
-        if (data[i] == '0') {
-            cur = cur->left;
-        } else if (data[i] == '1') {
-            cur = cur->right;
-        } else {
-            printf("Error in test decoding\n");
-            exit(1);
-        }
-    }
-    fputc(cur->value, fp);
-
-    DEBUG_INFO("decode_test", ("Testing decoding to decode_test"));
-
-    fclose(fp);
-}
-
-void ts_print(u8 *ts) {
-    u64 i;
-
-    for (i = 0; i < da_size(ts); ++i) {
-        if (ts[i] == '\n') {
-            printf("\\n");
-        } else if (ts[i] < 128) {
-            putchar(ts[i]);
-        }
-    }
-    printf("\n\n");
 }
 
 u8 *ts_build(Arena *a, Leaf *root) {
