@@ -7,8 +7,8 @@
 #define DA_IMPLEMENTATION
 #include "../util/da.h"
 
-#define DEBUG
-#include "../util/debuginfo.h"
+#define ENABLE_INFO
+#include "../util/info.h"
 
 typedef struct Leaf Leaf;
 struct Leaf {
@@ -32,7 +32,7 @@ u8 *file_load(Arena *a, const char *path) {
     data = da_create(a, u8, size);
     fread(data, size, 1, fp);
 
-    DEBUG_INFO("file_load", ("Loaded %s, %lu bytes", path, size));
+    INFO("file_load", ("Loaded %s, %lu bytes", path, size));
 
     fclose(fp);
     return data;
@@ -59,7 +59,7 @@ Leaf *leaves_get(Arena *a, u8 *data) {
         }
     }
 
-    DEBUG_INFO("leaves_get", ("Got %lu leaves", da_size(leaves)));
+    INFO("leaves_get", ("Got %lu leaves", da_size(leaves)));
 
     return leaves;
 }
@@ -106,7 +106,7 @@ Leaf *tree_build(Arena *a, Leaf *leaves) {
         da_push(ptrs, 0, lp);
     }
 
-    DEBUG_INFO("tree_build", ("Built tree"));
+    INFO("tree_build", ("Built tree"));
 
     return ptrs[0];
 }
@@ -138,7 +138,7 @@ c8 **codes_gen(Arena *a, Leaf *root) {
 
     code_gen(a, codes, buf, root);
 
-    DEBUG_INFO("codes_gen", ("Generated codes"));
+    INFO("codes_gen", ("Generated codes"));
 
     return codes;
 }
@@ -321,7 +321,7 @@ void encode(const char *input_path, const char *output_path) {
 
     fprintf(stdout, "\33[2K\rEncoding progress: 100%%\n");
 
-    DEBUG_INFO("encode", ("Encoded file %s -> %s", input_path, output_path));
+    INFO("encode", ("Encoded file %s -> %s", input_path, output_path));
 
     fclose(fp);
     arena_free(&a);
@@ -404,7 +404,7 @@ void decode(const char *input_path, const char *output_path) {
 
     fprintf(stdout, "\33[2K\rDecoding progress: 100%%\n");
 
-    DEBUG_INFO("decode", ("Decoded file %s -> %s", input_path, output_path));
+    INFO("decode", ("Decoded file %s -> %s", input_path, output_path));
 
     arena_free(&a);
 }
