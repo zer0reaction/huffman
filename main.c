@@ -169,8 +169,8 @@ u8 *ts_build(Arena *a, Leaf *root) {
     ret = da_create(a, u8, 0);
 
     da_push_back(ret, '[');
-    da_append(ret, l);
-    da_append(ret, r);
+    ret = da_append(ret, l);
+    ret = da_append(ret, r);
     da_push_back(ret, ']');
 
     return ret;
